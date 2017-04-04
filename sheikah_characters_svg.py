@@ -133,13 +133,17 @@ Polylineクラス：
 帰路：[Pc, ..]         --> [Qb, Qa, Pc, ..]  (Qa, Qbを（この順に）先頭に追加)
 
 各点Pa, Pb, Pcは，Pointクラスのオブジェクトとして，
-Pa.style = 'line', Pb.style = 'outer-corner', Pc.style = 'inner-corner'とかにしておけばいいか．
+Pa.style = 'line', Pb.style = 'l-corner' or 'r-corner',
+Pc.style = 'line'にする．
+'inner-corner'というのも最初考えたが，これだと処理の際に再度
+前後の頂点を参照する必要があり面倒．
+inner-cornerをroundで処理したい場合は，そもそも頂点増やすべきだ．
+これは，Pbについてもそう．一気に90度は精度悪いようなので，45度の点を追加するようにしたい．
+
 
 Pointクラス
   ・coordinate （実座標，y座標は上が正）
   ・style
-
-Pa.style='corner'の場合に円を描きたい場合のために，Pcの座標も持たせた方が良いのだろうか．
 
 #-----------------------------------------------------------------------------
 
@@ -161,10 +165,12 @@ start_style='stop'
 
 start_style='l-corner'
 #
-#  a    c
+#  a   (c)
 #    P----->---
 #       b
-# ここの処理は曲がり角と同じだが，innner-cornerは処理しないので，Pc.style='line'にするべきという点だけ違う．
+# ここの処理は曲がり角と同じ．
+# Pc付け加えるの無駄な予感がするのだが，処理の分岐を減らす意味で常にPc.style='line'で
+# 入れておくべきか．
 '''
 
 class Char:
@@ -239,6 +245,11 @@ class Point:
         self.style = style
 
 
+class SvgPath:
+
+    def __init__():
+      pass
+
 
 # ---------------------------------------------------------------------
 
@@ -253,33 +264,33 @@ if __name__ == '__main__':
     digit_characters = []
 
     for c in alphabet_characters:
-        svg = c.generate_svg(wide_size, narrow_size, line_width_a)
+        svg_output = c.generate_svg(wide_size, narrow_size, line_width_a)
         f = open('test_{0}_{1}_{2}.svg'.format(
                     c.char_name, wide_size, narrow_size),
                 'w')
-        f.write(svg)
+        f.write(svg_output)
         f.close()
 
-        svg = c.generate_svg(wide_size, narrow_size, line_width_a,
+        svg_output = c.generate_svg(wide_size, narrow_size, line_width_a,
                              color='cyan', grid_display=True)
         f = open('test_{0}_{1}_{2}.svg'.format(
                     c.char_name, wide_size, narrow_size),
                 'w')
-        f.write(svg)
+        f.write(svg_output)
         f.close()
 
     for c in digit_characters:
-        svg = c.generate_svg(wide_size, narrow_size, line_width_d)
+        svg_output = c.generate_svg(wide_size, narrow_size, line_width_d)
         f = open('test_{0}_{1}_{2}.svg'.format(
                     c.char_name, wide_size, narrow_size),
                 'w')
-        f.write(svg)
+        f.write(svg_output)
         f.close()
 
-        svg = c.generate_svg(wide_size, narrow_size, line_width_d,
+        svg_output = c.generate_svg(wide_size, narrow_size, line_width_d,
                              color='cyan', grid_display=True)
         f = open('test_{0}_{1}_{2}.svg'.format(
                     c.char_name, wide_size, narrow_size),
                 'w')
-        f.write(svg)
+        f.write(svg_output)
         f.close()
