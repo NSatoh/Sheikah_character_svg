@@ -172,6 +172,14 @@ start_style='l-corner'
 # 入れておくべきか．
 '''
 
+SVG_HEADER = r'''<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="{size}px" height="{size}px" viewBox="{vmin} {vmin} {vmax} {vmax}">
+
+'''
+
+
 class Char:
 
     def __init__(self, char_name, polylines, dots):
@@ -184,8 +192,8 @@ class Char:
         y座標は上が正．
         '''
         self.char_name = char_name
-        self._polylines = polylines
-        self._dots = dots
+        self.polylines = polylines
+        self.dots = dots
 
     def generate_svg(self, wide_size, narrow_size, line_width,
                      size=1000, color='black', scale=1, grid_display=False):
@@ -196,7 +204,19 @@ class Char:
         :rtype: str
         :return: SVG source of this character.
         '''
-        pass
+        frame_size = size * scale
+        grid_margin = 0
+        if grid_display:
+            grid_margin = 200*scale
+        viewbox_size = frame_size + grid_margin * 2
+
+        svg_header = SVG_HEADER.format(size=viewbox_size,
+                                       vmin=-grid_margin, vmax=viewbox_size-grid_margin)
+        svg_body = ''
+        svg_footer = '\n</svg>'
+
+        return svg_header + svg_body + svg_footer
+
 
     def save_svg(self, wide_size, narrow_size, line_width,
                  size=1000, color='black', scale=1, grid_display=False):
