@@ -277,7 +277,7 @@ class SvgPath:
         elif self.style == 'line':
             self.path_body += '\n    L' # HやVも使った方がいいんだろうか．
         elif self.style == 'arc':
-            self.path_body += '\n    L' # HやVも使った方がいいんだろうか．
+            self.path_body += '\n    Q {x} {y}'.format(x=point.ctrl_pt[0], y=point.ctrl_pt[1])
 
         self.path_body += ' {x} {y}'.format(x=self.x, y=self.y)
 
