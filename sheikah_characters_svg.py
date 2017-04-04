@@ -133,13 +133,12 @@ Polylineクラス：
 帰路：[Pc, ..]         --> [Qb, Qa, Pc, ..]  (Qa, Qbを（この順に）先頭に追加)
 
 各点Pa, Pb, Pcは，Pointクラスのオブジェクトとして，
-Pa.style = 'line', Pb.style = 'l-corner' or 'r-corner',
+Pa.style = 'line', Pb.style = 'line' or 'corner',
 Pc.style = 'line'にする．
-'inner-corner'というのも最初考えたが，これだと処理の際に再度
-前後の頂点を参照する必要があり面倒．
-inner-cornerをroundで処理したい場合は，そもそも頂点増やすべきだ．
-これは，Pbについてもそう．一気に90度は精度悪いようなので，45度の点を追加するようにしたい．
 
+line_join=='round'の場合は，PaからPbへ行く中継点Pabも作る．一気に90度だとベジェの精度は
+やや悪いようなので．また，制御点の座標も計算して，Pab.ctrl_pt, Pb.ctrl_ptに入れておく．
+inner_corner_radiusが指定されているときは，さらにPc側にもPp, Pqとかを追加する．
 
 Pointクラス
   ・coordinate （実座標，y座標は上が正）
@@ -153,15 +152,15 @@ start_style='stop'
 #
 #  b
 #    P--->---
-#  a
+#  a=d
 #
 #  forward_path.append(Pa)
 #  backward_path.insert(0, Pb)
 #
-#  Pa.style = 'stop'
+#  Pa.style = 'start'
 #  Pb.style = 'line'
-#
-#  とかか．
+#  Pd.style = 'line'
+#  とかか．処理を簡単にするために，スタート地点については，第4の点dをaと同じ座標でとる．
 
 start_style='l-corner'
 #
@@ -204,13 +203,13 @@ class Char:
         '''
         テスト時のマニュアルセーブ用
         '''
-        svg = self.generate_svg(wide_size, narrow_size, line_width,
+        svg_output = self.generate_svg(wide_size, narrow_size, line_width,
                  size, color, scale, grid_display)
         fname = tkinter.filedialog.asksaveasfilename(
                     filetypes =[('svg files', '*.svg')])
         if fname:
             f = open(fname, 'w')
-            f.write(svg)
+            f.write(svg_output)
             f.close()
 
 
@@ -222,6 +221,7 @@ class Polyline:
         self.end_style = end_style
 
     def generate_path(self, wide_size, narrow_size, line_width,
+                      size=1000, color='black', scale=1,
                       line_join='bevel', stop_style=None,
                       inner_corner_radius=None):
         '''
@@ -235,20 +235,55 @@ class Polyline:
         :return: '<path d="M ...."/>'
         '''
 
-        pass
+        forward_path = []
+        backward_path = []
+        # ここで色々処理
+
+        path = SvgPath(color)
+        for point in forward_path:
+            path.append(point)
+        for point in backward_path:
+            path.append(point)
+
+        return path
 
 
 class Point:
 
-    def __init__(self, coordinate, style):
-        self.coordinate = coordinate
+    def __init__(self, coordinate, style, ctrl_pt=None):
+        '''
+        :param tuple[int] coordinate:
+        :param str style: 'start' or 'line' or 'arc'
+        :param tuple[int] ctrl_pt:
+        '''
+        self.x = coordinate[0]
+        self.y = coordinate[1]
         self.style = style
+        self.ctrl_pt = ctrl_pt
 
 
 class SvgPath:
 
-    def __init__():
-      pass
+    def __init__(self, color):
+        self.path_header = '  <path stroke="none" fill="{color}" d="'.format(color=color)
+        self.path_body = ''
+        self.path_footer = '\n    Z\n  "/>'
+
+
+    def append(self, point):
+
+        if self.style == 'start':
+            self.path_body += '\n    M'
+        elif self.style == 'line':
+            self.path_body += '\n    L' # HやVも使った方がいいんだろうか．
+        elif self.style == 'arc':
+            self.path_body += '\n    L' # HやVも使った方がいいんだろうか．
+
+        self.path_body += ' {x} {y}'.format(x=self.x, y=self.y)
+
+
+    def output_svg(self):
+        return self.svg_header + self.svg_body + self.svg_footer
 
 
 # ---------------------------------------------------------------------
