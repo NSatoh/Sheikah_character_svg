@@ -428,7 +428,7 @@ class Polyline(GryphElement):
 
             elif start_i > next_i:                                        #  b
                 a_x, a_y = start_x + line_width/2, start_y - line_width/2 # <--s
-                D_i, D_j = start_i , start_j + 1                          #  c D a
+                D_i, D_j = start_i , start_j - 1                          #  c D a
 
             elif start_j < next_j:                                        #  c | b
                 a_x, a_y = start_x - line_width/2, start_y - line_width/2 #  D s
@@ -451,7 +451,7 @@ class Polyline(GryphElement):
             （ここのpt_cはinnner-cornerの処理が必要ない）
             '''
             if start_i < next_i:                                          #     b
-                c_x, c_y = start_x - line_width/2, start_y + line_width/2 #   s-->
+                c_x, c_y = start_x + line_width/2, start_y - line_width/2 #   s-->
                 D_i, D_j = start_i, start_j - 1                           # a D c
 
             elif start_i > next_i:                                        #  c D a
@@ -568,7 +568,7 @@ class Polyline(GryphElement):
 
             elif end_i > prev_i:              #  b
                 #                             # <--e
-                D_i, D_j = end_i , end_j + 1  #  c D a
+                D_i, D_j = end_i , end_j - 1  #  c D a
 
             elif end_j < prev_j:              #  c | b
                 #                             #  D e
