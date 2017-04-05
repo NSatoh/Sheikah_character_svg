@@ -344,8 +344,9 @@ class Polyline(GryphElement):
         :return: '<path d="M ...."/>'
         '''
 
-        forward_path = []
-        backward_path = []
+        forward_path = []  # 往路
+        turning_path = []  # 折り返し
+        backward_path = [] # 復路
 
         #-- startの処理 ---------------------------------------------------------------
         (start_i, start_j) = self.cells[0]
@@ -407,7 +408,7 @@ class Polyline(GryphElement):
                 # backward_path.insert(0, pt_p)
                 pass
 
-            backward_path.insert(0, pt_b)
+            forward_path.append(pt_b)
 
 
         elif self.start_style == 'l-corner':
@@ -470,10 +471,115 @@ class Polyline(GryphElement):
             forward_path.append(pt_c)
 
         #-- endの処理 ---------------------------------------------------------------
-        # dummy追加があるかもしれないので，ここも先にやる．
-        # stopの場合はあとでまたやるのでもいいが，ここで処理はやっておいて，
-        # スタックに積んどく．
+        '''
+        dummy追加があるかもしれないので，ここも先にやる．
+        stopの場合はあとでまたやるのでもいいが，ここで処理はやっておいて，
+        折り返し点用のリストを作っておく．
+        '''
+        (end_i, end_j) = self.cells[-1]
+        (end_x, end_y) = self.coordinate((end_i, end_j), wide_size, narrow_size)
+        (prev_i, prev_j) = self.cells[-2]
+
+        # 'l-corner', 'r-corner'の場合は末尾にダミーを追加する．
         end_dummy = []
+
+        if self.end_style == 'stop':
+
+            # style判定
+            if line_join == 'round':
+                _stop_style = 'round'
+            else:
+                _stop_style = 'sqruare'
+
+            # 指定されている場合は優先
+            if stop_style:
+                _stop_style = stop_style
+
+            # pt_a, pt_b, pt_d の位置を決定
+            # ここの座標計算部分は，startと全く同じであることが判明．
+            # まとめられるかもしれん．
+            if end_i < prev_i:                                        # b
+                a_x, a_y = end_x - line_width/2, end_y - line_width/2 #   e--<--
+                b_x, b_y = end_x - line_width/2, end_y + line_width/2 # a
+
+            elif end_i > prev_i:                                      #        a
+                a_x, a_y = end_x + line_width/2, end_y + line_width/2 # -->--e
+                b_x, b_y = end_x + line_width/2, end_y - line_width/2 #        b
+
+            elif end_j < prev_j:                                      #    |
+                a_x, a_y = end_x + line_width/2, end_y - line_width/2 #    e
+                b_x, b_y = end_x - line_width/2, end_y - line_width/2 #  b   a
+
+            else: # end_j > prev_j                                    #  a   b
+                a_x, a_y = end_x - line_width/2, end_y + line_width/2 #    e
+                b_x, b_y = end_x + line_width/2, end_y + line_width/2 #    |
+
+            pt_a = Point(coordinate=(a_x, a_y), style='line')
+            pt_b = Point(coordinate=(b_x, b_y), style='line')
+
+            if _stop_style == 'round':
+                # pt_b.style = 'arc'
+                # pt_b.ctrl_pt = (foo, bar)
+                # pt_p = Point(hoge)
+                # pt_q = Point(hoge)
+                # pt_r = Point(hoge)
+                pass
+
+            # 折り返しリストに追加
+            turning_path.append(pt_a)
+            if _stop_style == 'round':
+                # turning_path.append(pt_p)
+                # turning_path.append(pt_q)
+                # turning_path.append(pt_r)
+                pass
+
+            turning_path.append(pt_b)
+
+        elif self.end_style == 'l-corner':
+            '''
+            末尾にdummyセルを追加して，あとは道中の処理に任せる．
+            この場合はturning_pathは空のまま．
+            '''
+            # ここの計算は，startの'r-corner'とほぼ同じ
+            if end_i < prev_i:                #     b
+                #                             #   e--<--
+                D_i, D_j = end_i, end_j - 1   # a D c
+
+            elif end_i > prev_i:              #  c D a
+                #                             # <--e
+                D_i, D_j = end_i , end_j + 1  #  b
+
+            elif end_j < prev_j:              #  b | c
+                #                             #    e D
+                D_i, D_j = end_i + 1, end_j   #      a
+
+            else: # end_j > prev_j            #  a
+                #                             #  D e
+                D_i, D_j = end_i - 1, end_j   #  c | b
+
+            end_dummy = [(D_i, D_j)]
+
+
+        elif self.end_style == 'r-corner':
+
+            if end_i < prev_i:                # a D c
+                #                             #   e-->
+                D_i, D_j = end_i, end_j + 1   #     b
+
+            elif end_i > prev_i:              #  b
+                #                             # <--e
+                D_i, D_j = end_i , end_j + 1  #  c D a
+
+            elif end_j < prev_j:              #  c | b
+                #                             #  D e
+                D_i, D_j = end_i - 1, end_j   #  a
+
+            else: # end_j > prev_j            #      a
+                #                             #    s D
+                D_i, D_j = end_i + 1, end_j   #  b | c
+
+            end_dummy = [(D_i, D_j)]
+
 
         #-- 道中の処理 ---------------------------------------------------------------
         # きっとここがメイン
@@ -485,6 +591,8 @@ class Polyline(GryphElement):
 
         path = SvgPath(color, scale)
         for point in forward_path:
+            path.append(point)
+        for point in turning_path:
             path.append(point)
         for point in backward_path:
             path.append(point)
@@ -603,8 +711,6 @@ if __name__ == '__main__':
         f.write(svg_output)
         f.close()
         print('write --> {}'.format(fname))
-        if c.test_print:
-            print(c.test_print)
 
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_a,
                              color='cyan', grid_display=True)
@@ -615,6 +721,7 @@ if __name__ == '__main__':
         print('write --> {}'.format(fname))
         if c.test_print:
             print(c.test_print)
+        print('\n----------------------------------------------------\n')
 
     for c in digit_characters:
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_d)
@@ -623,8 +730,6 @@ if __name__ == '__main__':
         f.write(svg_output)
         f.close()
         print('write --> {}'.format(fname))
-        if c.test_print:
-            print(c.test_print)
 
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_d,
                              color='cyan', grid_display=True)
@@ -635,6 +740,7 @@ if __name__ == '__main__':
         print('write --> {}'.format(fname))
         if c.test_print:
             print(c.test_print)
+        print('\n----------------------------------------------------\n')
 
     print('finish test')
 

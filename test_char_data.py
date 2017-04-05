@@ -38,7 +38,7 @@ characters.append(
         char_name = 't1',
         polylines = [
             Polyline(
-                points=[ (2,6),
+                cells=[ (2,6),
                          (0,6),
                          (0,4),
                          (4,4),
@@ -48,7 +48,7 @@ characters.append(
                 end_style='r-corner'
             ),
             Polyline(
-                points=[ (2,4),
+                cells=[ (2,4),
                          (2,2),
                          (4,2)
                 ],
@@ -56,21 +56,21 @@ characters.append(
                 end_style='stop'
             ),
             Polyline(
-                points=[ (0,0),
+                cells=[ (0,0),
                          (2,0)
                        ],
                 start_style='stop',
                 end_style='stop'
             ),
             Polyline(
-                points=[ (6,6),
+                cells=[ (6,6),
                          (6,4)
                        ],
                 start_style='r-corner',
                 end_style='l-corner'
             ),
             Polyline(
-                points=[ (6,2),
+                cells=[ (6,2),
                          (6,0)
                        ],
                 start_style='l-corner',
