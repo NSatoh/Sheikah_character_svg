@@ -116,8 +116,8 @@ Polylineクラス：
 #                v
 #                |
 
-往路：[.., Pc]         --> [.., Pc, Qa, Qb]  (Qa, Qbを（この順に）末尾に追加)
-帰路：[Pb, Pa, ..]     --> [Qc, Pb, Pa, ..]  (Qcを先頭に追加)
+往路：[.., Pc]     --> [.., Pc, Qa, Qb]  (Qa, Qbを（この順に）末尾に追加)
+帰路：[Pb, Pa, ..] --> [Qc, Pb, Pa, ..]  (Qcを先頭に追加)
 
 
 (ex.2) 頂点Qで左に曲がる（図は，頂点Pは左曲がりのとき）
@@ -179,6 +179,17 @@ SVG_HEADER = r'''<?xml version="1.0" encoding="utf-8"?>
 
 '''
 
+def det(A, B):
+    return A[0] * B[1] - A[1] * B[0]
+
+def rot_sgn(A, B, C):
+    '''
+    三角形ABCがこの順に右回りか左回りか調べて，符号を返す．
+    '''
+    if det(A, B) + det(B, C) + det(C, A) > 0:
+        return 1
+    else:
+        return -1
 
 class Char:
 
@@ -314,8 +325,8 @@ class GryphElement:
 
 class Polyline(GryphElement):
 
-    def __init__(self, points, start_style, end_style):
-        self.points = points
+    def __init__(self, cells, start_style, end_style):
+        self.cells = cells
         self.start_style = start_style
         self.end_style = end_style
 
@@ -335,7 +346,142 @@ class Polyline(GryphElement):
 
         forward_path = []
         backward_path = []
-        # ここで色々処理
+
+        #-- startの処理 ---------------------------------------------------------------
+        (start_i, start_j) = self.cells[0]
+        (start_x, start_y) = self.coordinate((start_i, start_j), wide_size, narrow_size)
+        (next_i, next_j) = self.cells[1]
+
+        # 'l-corner', 'r-corner'の場合は先頭にダミーを追加する．
+        start_dummy = []
+
+        if self.start_style == 'stop':
+
+            # style判定
+            if line_join == 'round':
+                _stop_style = 'round'
+            else:
+                _stop_style = 'sqruare'
+
+            # 指定されている場合は優先
+            if stop_style:
+                _stop_style = stop_style
+
+            # pt_a, pt_b, pt_d の位置を決定
+            # ここ'l-corner', 'r-corner'のときとなんか共通の処理にできないものか．
+            if start_i < next_i:                                          #   b
+                a_x, a_y = start_x - line_width/2, start_y - line_width/2 #     s-->
+                b_x, b_y = start_x - line_width/2, start_y + line_width/2 # d=a
+
+            elif start_i > next_i:                                        #      a=d
+                a_x, a_y = start_x + line_width/2, start_y + line_width/2 # <--s
+                b_x, b_y = start_x + line_width/2, start_y - line_width/2 #      b
+
+            elif start_j < next_j:                                        #    |
+                a_x, a_y = start_x + line_width/2, start_y - line_width/2 #    s
+                b_x, b_y = start_x - line_width/2, start_y - line_width/2 #  b   a=d
+
+            else: # start_j > next_j                                      #  d=a   b
+                a_x, a_y = start_x - line_width/2, start_y + line_width/2 #      s
+                b_x, b_y = start_x + line_width/2, start_y + line_width/2 #      |
+
+            pt_a = Point(coordinate=(a_x, a_y), style='start')
+            pt_d = Point(coordinate=(a_x, a_y), style='line')
+            pt_b = Point(coordinate=(b_x, b_y), style='line')
+
+            if _stop_style == 'round':
+                # pt_d.style = 'arc'
+                # pt_d.ctrl_pt = (foo, bar)
+                # pt_p = Point(hoge)
+                # pt_q = Point(hoge)
+                # pt_r = Point(hoge)
+                pass
+
+            # 往路は末尾に，復路は先頭に追加
+            forward_path.append(pt_a)
+            backward_path.insert(0, pt_d)
+
+            if _stop_style == 'round':
+                # backward_path.insert(0, pt_r)
+                # backward_path.insert(0, pt_q)
+                # backward_path.insert(0, pt_p)
+                pass
+
+            backward_path.insert(0, pt_b)
+
+
+        elif self.start_style == 'l-corner':
+            '''
+            先頭にdummyセルを追加して，あとは道中の処理に任せる．
+            style='start'の点pt_aを，往路へに追加する処理だけやる．
+            (道中の処理で，復路の末尾にpt_aと同じ座標の点が入る）
+
+            この方法だと，スタートだけ他の曲がり角と違う処理にすることは
+            できないが，そこまで対応する必要はなさそうか．
+            スタートだけ別処理を追加したければ，'l-corner', 'r-corner'以外に
+            新たにstyleを定義して分岐を増やせばできる．
+            '''
+            if start_i < next_i:                                          # a D c
+                a_x, a_y = start_x - line_width/2, start_y + line_width/2 #   s-->
+                D_i, D_j = start_i, start_j + 1                           #     b
+
+            elif start_i > next_i:                                        #  b
+                a_x, a_y = start_x + line_width/2, start_y - line_width/2 # <--s
+                D_i, D_j = start_i , start_j + 1                          #  c D a
+
+            elif start_j < next_j:                                        #  c | b
+                a_x, a_y = start_x - line_width/2, start_y - line_width/2 #  D s
+                D_i, D_j = start_i - 1, start_j                           #  a
+
+            else: # start_j > next_j                                      #      a
+                a_x, a_y = start_x + line_width/2, start_y + line_width/2 #    s D
+                D_i, D_j = start_i + 1, start_j                           #  b | c
+
+            start_dummy = [(D_i, D_j)]
+            pt_a = Point(coordinate=(a_x, a_y), style='start')
+            forward_path.append(pt_a)
+
+
+        elif self.start_style == 'r-corner':
+            '''
+            dummy追加して道中の処理に任せる．
+            往路への，style='start'の点pt_c追加だけやる．
+            inner_cornerを'round'で処理する場合も分岐の必要はない．
+            （ここのpt_cはinnner-cornerの処理が必要ない）
+            '''
+            if start_i < next_i:                                          #     b
+                c_x, c_y = start_x - line_width/2, start_y + line_width/2 #   s-->
+                D_i, D_j = start_i, start_j - 1                           # a D c
+
+            elif start_i > next_i:                                        #  c D a
+                c_x, c_y = start_x - line_width/2, start_y + line_width/2 # <--s
+                D_i, D_j = start_i , start_j + 1                          #  b
+
+            elif start_j < next_j:                                        #  b | c
+                c_x, c_y = start_x + line_width/2, start_y + line_width/2 #    s D
+                D_i, D_j = start_i + 1, start_j                           #      a
+
+            else: # start_j > next_j                                      #  a
+                c_x, c_y = start_x - line_width/2, start_y - line_width/2 #  D s
+                D_i, D_j = start_i - 1, start_j                           #  c | b
+
+            start_dummy = [(D_i, D_j)]
+            pt_c = Point(coordinate=(c_x, c_y), style='start')
+            forward_path.append(pt_c)
+
+        #-- endの処理 ---------------------------------------------------------------
+        # dummy追加があるかもしれないので，ここも先にやる．
+        # stopの場合はあとでまたやるのでもいいが，ここで処理はやっておいて，
+        # スタックに積んどく．
+        end_dummy = []
+
+        #-- 道中の処理 ---------------------------------------------------------------
+        # きっとここがメイン
+
+        corner_cells = start_dummy + self.cells + end_dummy
+        for cell in corner_cells[1:-1]:
+            pass
+
 
         path = SvgPath(color, scale)
         for point in forward_path:
