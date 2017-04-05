@@ -579,14 +579,115 @@ class Polyline(GryphElement):
                 D_i, D_j = end_i + 1, end_j   #  b | c
 
             end_dummy = [(D_i, D_j)]
+            # なんか，よく考えると根本的な処理はやってるんだよなすでに．
+            # 道中の処理に任せないでここでやっちゃう方がよかったかもしれない．
+            # あと，道中の処理で同じような処理が行われるので，やはり関数に
+            # まとめた方がいい．
 
 
         #-- 道中の処理 ---------------------------------------------------------------
-        # きっとここがメイン
 
         corner_cells = start_dummy + self.cells + end_dummy
-        for cell in corner_cells[1:-1]:
-            pass
+        prev_cell = corner_cells[0]
+        cell = corner_cells[1]
+        for next_cell in corner_cells[2:]:
+            (i, j) = cell
+            (x, y) = self.coordinate(cell, wide_size, narrow_size)
+            (prev_i, prev_j) = prev_cell
+            if rot_sgn(prev_cell, cell, next_cell) > 0:# 左まわり
+                if i < prev_i:                                    #     a
+                    a_x, a_y = x + line_width/2, y + line_width/2 #   +--<--+
+                    b_x, b_y = x - line_width/2, y - line_width/2 # b | c
+                    c_x, c_y = x + line_width/2, y - line_width/2 #   v
+
+                elif i > prev_i:                                  #         ^
+                    a_x, a_y = x - line_width/2, y - line_width/2 #       c | b
+                    b_x, b_y = x + line_width/2, y + line_width/2 #   +-->--+
+                    c_x, c_y = x - line_width/2, y + line_width/2 #       a
+
+                elif j < prev_j:                                  #   +
+                    a_x, a_y = x - line_width/2, y + line_width/2 # a | c
+                    b_x, b_y = x + line_width/2, y - line_width/2 #   +-->--
+                    c_x, c_y = x + line_width/2, y + line_width/2 #     b
+
+                else: # j > prev_j                                #    b
+                    a_x, a_y = x + line_width/2, y - line_width/2 # --<--+
+                    b_x, b_y = x - line_width/2, y + line_width/2 #    c | a
+                    c_x, c_y = x - line_width/2, y - line_width/2 #      +
+
+                pt_a = Point(coordinate=(a_x, a_y), style='line')
+                pt_b = Point(coordinate=(b_x, b_y), style='line')
+                pt_c = Point(coordinate=(c_x, c_y), style='line')
+
+                backward_path.insert(0, pt_a)
+
+                if line_join == 'round':
+                    # pt_b.style = 'arc'
+                    # pt_b.ctrl_pt = (foo, bar)
+                    # pt_ab = Point(hoge)
+                    # backward_path.insert(0, pt_ab)
+                    pass
+
+                backward_path.insert(0, pt_b)
+
+                if inner_corner_radius:
+                    # pt_p = Point(hoge)
+                    # pt_q = Point(hoge)
+                    # pt_r = Point(hoge)
+                    # forward_path.append(pt_p)
+                    # forward_path.append(pt_q)
+                    # forward_path.append(pt_r)
+                    pass
+                else:
+                    forward_path.append(pt_c)
+
+            else: # 右まわり
+                if i < prev_i:                                    #   ^
+                    a_x, a_y = x + line_width/2, y - line_width/2 # b | c
+                    b_x, b_y = x - line_width/2, y + line_width/2 #   +--<--+
+                    c_x, c_y = x + line_width/2, y + line_width/2 #     a
+
+                elif i > prev_i:                                  #     a
+                    a_x, a_y = x - line_width/2, y + line_width/2 # +-->--+
+                    b_x, b_y = x + line_width/2, y - line_width/2 #     c | b
+                    c_x, c_y = x - line_width/2, y - line_width/2 #       v
+
+                elif j < prev_j:                                  #      +
+                    a_x, a_y = x + line_width/2, y + line_width/2 #    c | a
+                    b_x, b_y = x - line_width/2, y - line_width/2 # --<--+
+                    c_x, c_y = x - line_width/2, y + line_width/2 #    b
+
+                else: # j > prev_j                                #     b
+                    a_x, a_y = x - line_width/2, y - line_width/2 #   +-->--
+                    b_x, b_y = x + line_width/2, y + line_width/2 # a | c
+                    c_x, c_y = x + line_width/2, y - line_width/2 #   +
+
+                pt_a = Point(coordinate=(a_x, a_y), style='line')
+                pt_b = Point(coordinate=(b_x, b_y), style='line')
+                pt_c = Point(coordinate=(c_x, c_y), style='line')
+
+                forward_path.append(pt_a)
+
+                if line_join == 'round':
+                    # pt_b.style = 'arc'
+                    # pt_b.ctrl_pt = (foo, bar)
+                    # pt_ab = Point(hoge)
+                    # forward_path.append(pt_ab)
+                    pass
+
+                forward_path.append(pt_b)
+
+
+                if inner_corner_radius:
+                    # pt_p = Point(hoge)
+                    # pt_q = Point(hoge)
+                    # pt_r = Point(hoge)
+                    # backward_path.insert(0, pt_p)
+                    # backward_path.insert(0, pt_q)
+                    # backward_path.insert(0, pt_r)
+                    pass
+                else:
+                    backward_path.insert(0, pt_c)
 
 
         path = SvgPath(color, scale)
@@ -743,5 +844,3 @@ if __name__ == '__main__':
         print('\n----------------------------------------------------\n')
 
     print('finish test')
-
-
