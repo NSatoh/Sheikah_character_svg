@@ -129,8 +129,8 @@ Polylineクラス：
 #    P----->-----Q
 #       b     a
 
-往路：[.., Pa, Pb]     --> [.., Pa, Pb, Qc]  (Qcを末尾に追加)
-帰路：[Pc, ..]         --> [Qb, Qa, Pc, ..]  (Qa, Qbを（この順に）先頭に追加)
+往路：[.., Pc]     --> [.., Pc, Qc]          (Qcを末尾に追加)
+帰路：[Pb, Pa, ..] --> [Qb, Qa, Pb, Pa, ..]  (Qa, Qbを（この順に）先頭に追加)
 
 各点Pa, Pb, Pcは，Pointクラスのオブジェクトとして，
 Pa.style = 'line', Pb.style = 'line' or 'corner',
