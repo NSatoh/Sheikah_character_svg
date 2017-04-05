@@ -689,6 +689,9 @@ class Polyline(GryphElement):
                 else:
                     backward_path.insert(0, pt_c)
 
+            prev_cell = cell
+            cell = next_cell
+            
 
         path = SvgPath(color, scale)
         for point in forward_path:
