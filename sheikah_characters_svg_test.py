@@ -50,6 +50,7 @@ def generate_characters(wide_size, narrow_size,
 
     html = Html('Sheikah characters (wide:{}, narrow:{})'.format(wide_size, narrow_size))
     file_names = []
+    round_file_names = []
     grid_file_names = []
 
     alphabet_characters = alphabet_char_data.characters
@@ -63,6 +64,14 @@ def generate_characters(wide_size, narrow_size,
         f.close()
         file_names += [fname]
         print('write --> {}'.format(fname))
+
+        svg_output = c.generate_svg(wide_size, narrow_size, line_width_a,
+                             color='cyan', line_join='round')
+        fname = '{}_round.svg'.format(c.char_name)
+        f = open(save_dir + '/' + fname, 'w')
+        f.write(svg_output)
+        f.close()
+        round_file_names += [fname]
 
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_a,
                              color='cyan', grid_display=True)
@@ -97,6 +106,9 @@ def generate_characters(wide_size, narrow_size,
 
 
     for fname in file_names:
+        html.appendsvg(fname)
+    html.appendbreak()
+    for fname in round_file_names:
         html.appendsvg(fname)
     html.appendbreak()
     for fname in grid_file_names:

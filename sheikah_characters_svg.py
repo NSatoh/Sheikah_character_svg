@@ -198,6 +198,42 @@ def rot_sgn(A, B, C):
     else:
         return -1
 
+def arc_points(A, B, C):
+    '''
+    :param tuple[int] A, B, C: coordinate (NOT Point object)
+
+    generate Points for Bezier arc.
+    (Arc from A to B, whose center is C)
+
+    傾いたものは想定していない．
+            q
+      B*    +
+          *     p
+            o   +
+            ^ *
+      C     |  A
+            |
+            ab
+
+    :retrun: (ab, B) (ab.ctrl_pt = p, B.ctrl_pt = q)
+    '''
+    (a_x, a_y) = A
+    (b_x, b_y) = B
+    (c_x, c_y) = C
+
+    ratio1 = 2**0.5 / 2          # sin(45[deg])
+    ratio2 = 0.41421356237309503 # tan(22.5[deg])
+
+    ab = tuple([C[i] + (A[i] - C[i]) * ratio1 + (B[i] - C[i]) * ratio1 for i in range(2)])
+    p  = tuple([A[i] + (B[i] - C[i]) * ratio2 for i in range(2)])
+    q  = tuple([B[i] + (A[i] - C[i]) * ratio2 for i in range(2)])
+
+    pt_ab = Point(ab, style='arc', ctrl_pt=p)
+    pt_b  = Point(B, style='arc', ctrl_pt=q)
+
+    return (pt_ab, pt_b)
+
+
 class Char:
 
     def __init__(self, char_name, polylines, dots, test_print=None):
@@ -723,14 +759,12 @@ class Polyline(GryphElement):
                 pt_b = Point(coordinate=(b_x, b_y), style='line')
                 pt_c = Point(coordinate=(c_x, c_y), style='line')
 
-                backward_path.insert(0, pt_a)
-
                 if line_join == 'round':
-                    # pt_b.style = 'arc'
-                    # pt_b.ctrl_pt = (foo, bar)
-                    # pt_ab = Point(hoge)
-                    # backward_path.insert(0, pt_ab)
-                    pass
+                    (pt_ab, pt_a) = arc_points((b_x, b_y), (a_x, a_y), (c_x, c_y))
+                    backward_path.insert(0, pt_a)
+                    backward_path.insert(0, pt_ab)
+                else:
+                    backward_path.insert(0, pt_a)
 
                 backward_path.insert(0, pt_b)
 
@@ -773,11 +807,8 @@ class Polyline(GryphElement):
                 forward_path.append(pt_a)
 
                 if line_join == 'round':
-                    # pt_b.style = 'arc'
-                    # pt_b.ctrl_pt = (foo, bar)
-                    # pt_ab = Point(hoge)
-                    # forward_path.append(pt_ab)
-                    pass
+                    (pt_ab, pt_b) = arc_points((a_x, a_y), (b_x, b_y), (c_x, c_y))
+                    forward_path.append(pt_ab)
 
                 forward_path.append(pt_b)
 
@@ -842,7 +873,7 @@ class Dot(GryphElement):
                                  style='start'
                             )]
             forward_path += [Point(
-                                    coordinate=(center_x + lw/2, center_y - lw/2),
+                                    coordinate=(center_x - lw/2, center_y + lw/2),
                                     style='line'
                             )]
             forward_path += [Point(
@@ -850,9 +881,27 @@ class Dot(GryphElement):
                                     style='line'
                             )]
             forward_path += [Point(
-                                    coordinate=(center_x - lw/2, center_y + lw/2),
+                                    coordinate=(center_x + lw/2, center_y - lw/2),
                                     style='line'
                             )]
+
+        elif style == 'round':
+
+            lw = line_width
+            O = (center_x       , center_y       )
+            A = (center_x - lw/2, center_y       )
+            B = (center_x       , center_y + lw/2)
+            C = (center_x + lw/2, center_y       )
+            D = (center_x       , center_y - lw/2)
+
+            pt_a = Point(coordinate=A, style='start')
+
+            (pt_ab, pt_b) = arc_points(A, B, O)
+            (pt_bc, pt_c) = arc_points(B, C, O)
+            (pt_cd, pt_d) = arc_points(C, D, O)
+            (pt_de, pt_e) = arc_points(D, A, O)
+
+            forward_path = [pt_a, pt_ab, pt_b, pt_bc, pt_c, pt_cd, pt_d, pt_de, pt_e]
 
         path = SvgPath(color, scale)
         for point in forward_path:
