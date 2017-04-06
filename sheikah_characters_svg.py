@@ -8,57 +8,57 @@ METAFONTのpenposやpenstrokeに近い考え方で作り始めたが，結局だ
 #--------------------------------------------------------------------
 
 文字は，
-        0     1     2     3     4     5     6
-    +-------+---+-------+---+-------+---+-------+
-    |       |   |       |   |       |   |       |
-  0 |       |   |       |   |       |   |       |
-    |       |   |       |   |       |   |       |
-    +-------+---+-------+---+-------+---+-------+
-  1 |       |   |       |   |       |   |       |
-    +-------+---+-------+---+-------+---+-------+
-    |       |   |       |   |       |   |       |
-  2 |       |   |       |   |       |   |       |
-    |       |   |       |   |       |   |       |
-    +-------+---+-------+---+-------+---+-------+
-  3 |       |   |       |   |       |   |       |
-    +-------+---+-------+---+-------+---+-------+
-    |       |   |       |   |       |   |       |
-  4 |       |   |       |   |       |   |       |
-    |       |   |       |   |       |   |       |
-    +-------+---+-------+---+-------+---+-------+
-  5 |       |   |       |   |       |   |       |
     +-------+---+-------+---+-------+---+-------+
     |       |   |       |   |       |   |       |
   6 |       |   |       |   |       |   |       |
     |       |   |       |   |       |   |       |
     +-------+---+-------+---+-------+---+-------+
+  5 |       |   |       |   |       |   |       |
+    +-------+---+-------+---+-------+---+-------+
+    |       |   |       |   |       |   |       |
+  4 |       |   |       |   |       |   |       |
+    |       |   |       |   |       |   |       |
+    +-------+---+-------+---+-------+---+-------+
+  3 |       |   |       |   |       |   |       |
+    +-------+---+-------+---+-------+---+-------+
+    |       |   |       |   |       |   |       |
+  2 |       |   |       |   |       |   |       |
+    |       |   |       |   |       |   |       |
+    +-------+---+-------+---+-------+---+-------+
+  1 |       |   |       |   |       |   |       |
+    +-------+---+-------+---+-------+---+-------+
+    |       |   |       |   |       |   |       |
+  0 |       |   |       |   |       |   |       |
+    |       |   |       |   |       |   |       |
+    +-------+---+-------+---+-------+---+-------+
+        0     1     2     3     4     5     6
 
 のようなマス目内で描かれていると考えられる．
 
-        0     1     2     3     4     5     6
     +-------+---+-------+---+-------+---+-------+
     |    ///|   |    ///|///|///////|///|///    |
-  0 |  /////|   |  /////|///|///////|///|/////  |
+  6 |  /////|   |  /////|///|///////|///|/////  |
     |///////|   |///////|///|///////|///|///////|
     +-------+---+-------+---+-------+---+-------+
-  1 |///////|   |///////|   |       |   |///////|
+  5 |///////|   |///////|   |       |   |///////|
     +-------+---+-------+---+-------+---+-------+
     |///////|   |///////|   |///////|   |///////|
-  2 |///////|   |///////|   |///////|   |///////|
+  4 |///////|   |///////|   |///////|   |///////|
     |///////|   |///////|   |///////|   |///////|
     +-------+---+-------+---+-------+---+-------+
   3 |///////|   |///////|   |       |   |///////|
     +-------+---+-------+---+-------+---+-------+
     |///////|   |///////|///|///////|   |///////|
-  4 |///////|   |  /////|///|///////|   |///////|
+  2 |///////|   |  /////|///|///////|   |///////|
     |///////|   |    ///|///|///////|   |///////|
     +-------+---+-------+---+-------+---+-------+
-  5 |///////|   |       |   |       |   |///////|
+  1 |///////|   |       |   |       |   |///////|
     +-------+---+-------+---+-------+---+-------+
     |///////|///|///////|///|///////|///|///////|
-  6 |  /////|///|///////|///|///////|///|/////  |
+  0 |  /////|///|///////|///|///////|///|/////  |
     |    ///|///|///////|///|///////|///|///    |
     +-------+---+-------+---+-------+---+-------+
+        0     1     2     3     4     5     6
 
 例えば「a」はこれ．お？なんかイイのではこれ．
 
@@ -75,9 +75,9 @@ line-widthとは区別する．
 #--------------------------------------------------------------------
 
 Charクラス：
-  ・リストpolylines
-  ・リストdots
-  ・char_name ("a"とか"b"とか)
+  ・リストpolylines （2個以上のセルを結ぶ線たちのリスト，要素はPolylineクラスのオブジェクト）
+  ・リストdots      （単一セルが塗られる点たちのリスト，要素はDotクラスのオブジェクト）
+  ・char_name        ("a"とか"b"とか)
   ・SVGソースを生成するメソッド．y座標はここで反転させる．
 
 
@@ -180,10 +180,17 @@ SVG_HEADER = r'''<?xml version="1.0" encoding="utf-8"?>
 '''
 
 def det(A, B):
+    '''
+    determinant of 2x2 matrix.
+    '''
     return A[0] * B[1] - A[1] * B[0]
 
 def rot_sgn(A, B, C):
     '''
+    :param tuple[int] A, B, C: coordinate or cell address
+    :rtype: int
+    :return: sgn (left --> 1, right --> -1)
+
     三角形ABCがこの順に右回りか左回りか調べて，符号を返す．
     '''
     if det(A, B) + det(B, C) + det(C, A) > 0:
@@ -196,11 +203,14 @@ class Char:
     def __init__(self, char_name, polylines, dots, test_print=None):
         '''
         :param str char_name:
-        :param list[tuple[int]] polylines:
-        :param list[tuple[int]] dots:
+        :param list[Polyline] polylines:
+        :param list[Dot] dots:
+        :param str test_print:
 
-        polylines, dotsに格納する座標は，cell address.
-        y座標は上が正．
+        各文字のデータ．
+        Charオブジェクトを追加していくことで文字の登録を行っていく．
+
+        (cf) example --> test_char_data.py
         '''
         self.char_name = char_name
         self.polylines = polylines
@@ -310,9 +320,19 @@ class Char:
 
 
 class GryphElement:
+    '''
+    Polyline と Dot の親クラス．
+    セル番地からセルの座標を求めるメソッドしかないが．
+    '''
 
     def coordinate(self, cell_address, wide_size, narrow_size):
         '''
+        :param tuple[int] cell_address:
+        :param int wide_size:
+        :param int narrow_width:
+        :rtype: tuple[int]
+        :return: (x, y)
+
         セル番地から，セルの中心の座標を求める．
         y座標は上が正．
         '''
@@ -326,6 +346,40 @@ class GryphElement:
 class Polyline(GryphElement):
 
     def __init__(self, cells, start_style, end_style):
+        r'''
+        :param list[tuple[int]] cells: セル番地のリスト．この順に線を結ぶ．
+        :param str start_style: 'stop'|'l-corner'|'r-corner'
+        :param str end_style:    same above
+
+        2個以上のセルを結ぶ線．
+
+
+        #--------------------------#
+        #  start styles example    #
+        #--------------------------#
+
+        'stop'          'l-corner'       'r-corner'
+                            :
+        +-----------    +---:-------         +--------
+        |                \  :               /
+        |   X--->---      \ X--->---       / X--->---
+        | start            \              /  :
+        +-----------        +--------    +---:-------
+                                             :
+
+        #--------------------------#
+        #  end styles example      #
+        #--------------------------#
+
+        'stop'          'l-corner'      'r-corner'
+                              :
+        ----------+    -------:---+   -------+
+                  |           :  /            \
+        --->---X  |    --->---X /     --->---X \
+              end |            /             :  \
+        ----------+    --------+      -------:---+
+                                             :
+        '''
         self.cells = cells
         self.start_style = start_style
         self.end_style = end_style
@@ -333,15 +387,65 @@ class Polyline(GryphElement):
     def generate_path(self, wide_size, narrow_size, line_width,
                       color='black', scale=1, line_join='bevel',
                       stop_style=None, inner_corner_radius=None):
-        '''
+        r'''
         :param int wide_size:
         :param int narrow_size:
         :param int line_width:
-        :param str line_join:
-        :param str stop_style:
+        :param str line_join: 'bevel'|'square'|'round'
+        :param str stop_style: 'square'|'round' --> stop style start/end shape (like as stroke-linecap in SVG.)
         :param str inner_corner_radius:
         :rtype: str
-        :return: '<path d="M ...."/>'
+        :return: '  <path d="M ...."/>'
+
+
+        #--------------------------#
+        #  line_join example:      #
+        #--------------------------#
+
+        'bevel(default)'    'square'
+
+        |       |           |       |
+        |   |   |           |   |   |
+        +   v   +------     |   v   +------
+         \  |               |   |
+          \ X--->---        |   X--->---
+           \                |
+            +----------     +--------------
+
+        'round'
+
+         |              |*
+         |              |*
+         |              |**
+         |       |      |****     <-- circled if inner_corner_radius
+         |       |      |********
+         +       v      +-----------
+         *       |
+          *      |
+           *     X------>------
+             *
+                 *
+                      * +----------
+
+
+        #--------------------------#
+        #  stop_style example:     #
+        #--------------------------#
+
+        if stop_style is None:
+            line_join: 'bevel' or 'square' --> stop_style: 'square'
+            line_join: 'round'             --> stop_style: 'round'
+
+        'square'           'round'
+
+        -------------+     ----------+*
+                     |                   *
+                     |                    *
+           --->---X  |        --->---X    *
+                     |                    *
+                     |                   *
+        -------------+     ----------+*              :
+
         '''
 
         forward_path = []  # 往路
@@ -691,7 +795,7 @@ class Polyline(GryphElement):
 
             prev_cell = cell
             cell = next_cell
-            
+
 
         path = SvgPath(color, scale)
         for point in forward_path:
@@ -709,8 +813,10 @@ class Dot(GryphElement):
 
     def __init__(self, i, j):
         '''
-        (i, j): cell address
+        :param int i,j: cell address (i, j)
         y座標は上が正．
+
+        単一セルのみからなる塗りつぶし点．
         '''
         self.cell_address = (i, j)
 
@@ -762,6 +868,10 @@ class Point:
         :param tuple[int] coordinate:
         :param str style: 'start' or 'line' or 'arc'
         :param tuple[int] ctrl_pt:
+
+        セル座標ではない実際の座標（y座標は上が正）と，
+        その点までを直線で結ぶか円弧で結ぶかのstyleを指定．
+        円弧の場合はベジェで結ぶので，制御点の座標をctrl_ptに入れる．
         '''
         self.x = coordinate[0]
         self.y = coordinate[1]
@@ -771,13 +881,28 @@ class Point:
 
 class SvgPath:
 
-    def __init__(self, color, scale):
+    def __init__(self, color, scale=1):
+        '''
+        :param str color: 'black' or 'red' or 'blue' or 'cyan' or etc...
+        :param int scale:
+
+        色（fill属性）だけ指定．stroke="none"は固定．
+        append(Point)で点を追加していくとSVGのpath要素が文字列で作られる．
+        '''
         self.path_header = '  <path stroke="none" fill="{color}" d="'.format(color=color)
         self.path_body = ''
         self.path_footer = '\n    Z\n  "/>'
         self.scale = scale
 
     def append(self, point):
+        '''
+        :param Point point:
+
+        Pointクラスのオブジェクトを受け取って，その座標とstyleを参照して
+        path要素のd属性の末尾にコマンドと座標を追加していく．
+
+        この埋め込みの際に，y座標の符号反転とscale倍が処理される．
+        '''
 
         if point.style == 'start':
             self.path_body += '\n    M'
@@ -792,58 +917,26 @@ class SvgPath:
 
 
     def output_svg(self):
+        '''
+          output SVG path strings like below:
+
+        '  <path stroke="none" fill="{color}" d="
+             M x0 y0
+             L x1 y1
+               :
+             Z
+           "/>'
+
+        '''
         return self.path_header + self.path_body + self.path_footer
 
 
 # ---------------------------------------------------------------------
 
 if __name__ == '__main__':
-
-    import test_char_data
-    alphabet_characters = test_char_data.characters
-    digit_characters = []
-
+    import sheikah_characters_svg_test as test
     wide_size = 180
     narrow_size = 45
-    line_width_a = wide_size # alphabet
-    line_width_d = narrow_size # digit
-
-    for c in alphabet_characters:
-        svg_output = c.generate_svg(wide_size, narrow_size, line_width_a)
-        fname = 'test_{0}_{1}_{2}.svg'.format(c.char_name, wide_size, narrow_size)
-        f = open(fname, 'w')
-        f.write(svg_output)
-        f.close()
-        print('write --> {}'.format(fname))
-
-        svg_output = c.generate_svg(wide_size, narrow_size, line_width_a,
-                             color='cyan', grid_display=True)
-        fname = 'test_{0}_{1}_{2}_grid.svg'.format(c.char_name, wide_size, narrow_size)
-        f = open(fname, 'w')
-        f.write(svg_output)
-        f.close()
-        print('write --> {}'.format(fname))
-        if c.test_print:
-            print(c.test_print)
-        print('\n----------------------------------------------------\n')
-
-    for c in digit_characters:
-        svg_output = c.generate_svg(wide_size, narrow_size, line_width_d)
-        fname = 'test_{0}_{1}_{2}.svg'.format(c.char_name, wide_size, narrow_size)
-        f = open(fname, 'w')
-        f.write(svg_output)
-        f.close()
-        print('write --> {}'.format(fname))
-
-        svg_output = c.generate_svg(wide_size, narrow_size, line_width_d,
-                             color='cyan', grid_display=True)
-        fname = 'test_{0}_{1}_{2}_grid.svg'.format(c.char_name, wide_size, narrow_size)
-        f = open(fname, 'w')
-        f.write(svg_output)
-        f.close()
-        print('write --> {}'.format(fname))
-        if c.test_print:
-            print(c.test_print)
-        print('\n----------------------------------------------------\n')
+    test.generate_characters(wide_size, narrow_size, test=True)
 
     print('finish test')
