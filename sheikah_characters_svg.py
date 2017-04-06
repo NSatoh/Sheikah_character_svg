@@ -234,6 +234,22 @@ def arc_points(A, B, C):
     return (pt_ab, pt_b)
 
 
+def chamfer_vector(A, B, chamfer_length):
+    '''
+    :return: (x, y)
+
+    small length vector from A to B
+    (for chamfer the corners)
+    '''
+    v = [B[i] - A[i] for i in range(2)]
+    vl = (v[0]**2 + v[1]**2) ** 0.5
+
+    if vl > 0:
+        return (v[0]/vl*chamfer_length, v[1]/vl*chamfer_length)
+    else:
+        return (0,0)
+
+
 class Char:
 
     def __init__(self, char_name, polylines, dots, test_print=None):
@@ -256,7 +272,7 @@ class Char:
     def generate_svg(self, wide_size, narrow_size, line_width,
                      size=1000, color='black', scale=1, grid_display=False,
                      line_join='bevel', stop_style=None, inner_corner_radius=None,
-                     dot_style=None):
+                     dot_style=None, chamfer_length=15):
         '''
         :param int wide_size:
         :param int narrow_size:
@@ -289,6 +305,8 @@ class Char:
 
         if line_join == 'round':
             style = 'round'
+        elif line_join == 'rounded-bevel':
+            style = 'rounded-square'
         else:
             style = 'square'
         if dot_style:
@@ -339,14 +357,14 @@ class Char:
     def save_svg(self, wide_size, narrow_size, line_width,
                      size=1000, color='black', scale=1, grid_display=False,
                      line_join='bevel', stop_style=None, inner_corner_radius=None,
-                     dot_style=None):
+                     dot_style=None, chamfer_length=15):
 
         '''
         テスト時のマニュアルセーブ用
         '''
         svg_output = self.generate_svg(wide_size, narrow_size, line_width,
                  size, color, scale, grid_display, line_join, stop_style,
-                 inner_corner_radius, dot_style)
+                 inner_corner_radius, dot_style, chamfer_length)
         fname = tkinter.filedialog.asksaveasfilename(
                     filetypes =[('svg files', '*.svg')])
         if fname:
@@ -422,7 +440,8 @@ class Polyline(GryphElement):
 
     def generate_path(self, wide_size, narrow_size, line_width,
                       color='black', scale=1, line_join='bevel',
-                      stop_style=None, inner_corner_radius=None):
+                      stop_style=None, inner_corner_radius=None,
+                      chamfer_length=15):
         r'''
         :param int wide_size:
         :param int narrow_size:
@@ -438,15 +457,17 @@ class Polyline(GryphElement):
         #  line_join example:      #
         #--------------------------#
 
-        'bevel(default)'    'square'
+        'bevel(default)'   'rounded-bevel'              'square'(unsupported) #TODO support
 
-        |       |           |       |
-        |   |   |           |   |   |
-        +   v   +------     |   v   +------
-         \  |               |   |
-          \ X--->---        |   X--->---
-           \                |
-            +----------     +--------------
+        |       |          |       |                     |       |
+        |   |   |          |   |   |                     |   |   |
+        +   v   +------    o   v   o------               |   v   +------
+         \  |               \  |                         |   |
+          \ X--->---         \ X--->---                  |   X--->---
+           \                  \                          |
+            +----------        o----------               +--------------
+
+                               o: small radius circle (≒chamfer_length)
 
         'round'
 
@@ -813,7 +834,7 @@ class Polyline(GryphElement):
                 forward_path.append(pt_b)
 
 
-                if inner_corner_radius:
+                if inner_corner_radius and line_join != 'rounded-bevel':
                     # pt_p = Point(hoge)
                     # pt_q = Point(hoge)
                     # pt_r = Point(hoge)
@@ -827,13 +848,40 @@ class Polyline(GryphElement):
             prev_cell = cell
             cell = next_cell
 
+        path_points = forward_path + turning_path + backward_path
+
+        if line_join == 'rounded-bevel':
+            new_path_points = []
+
+            prev_pt = path_points[0].coordinate
+            for pt in path_points[1:]:
+                # このへん変数名ひどい
+                (x, y) = pt.coordinate                           #         vec (chamfer vector)
+                (p_x, p_y) = prev_pt                             #         -->
+                (v_x, v_y) = chamfer_vector(                     #      |                      |
+                               (p_x, p_y), (x, y),               #      |                      |
+                               chamfer_length)                   #      +----------------------+
+                new_path_points.append(                          # prev_pt                     pt
+                    Point(                                       # (p_x, p_y)      |           (x, y)
+                        coordinate=(p_x + v_x, p_y + v_y),       #                 |
+                        style='arc',                             #                 |
+                        ctrl_pt=(p_x, p_y)                       #                 V
+                    )                                            #      |                       |
+                )                                                #      +                       +
+                new_path_points.append(                          #       \                     /
+                    Point(                                       #      + +-------------------+ +
+                        coordinate=(x - v_x, y - v_y),           #        ^                   ^
+                        style='line'                             #        |'arc'              |'line'
+                    )                                            #      (p_x, p_y) + vec     (x, y) - vec
+                )
+                prev_pt = (x,y)
+
+            s = Point(coordinate=(x - v_x, y - v_y), style='start') # 直線のfor文の最後の処理結果使う（ひどい）．
+            new_path_points.insert(0, s)
+            path_points = new_path_points
 
         path = SvgPath(color, scale)
-        for point in forward_path:
-            path.append(point)
-        for point in turning_path:
-            path.append(point)
-        for point in backward_path:
+        for point in path_points:
             path.append(point)
 
         return path
@@ -852,12 +900,12 @@ class Dot(GryphElement):
         self.cell_address = (i, j)
 
     def generate_path(self, wide_size, narrow_size, line_width,
-                      color='black', scale=1, style='square'):
+                      color='black', scale=1, style='square', chamfer_length=15):
         '''
         :param int wide_size:
         :param int narrow_size:
         :param int line_width:
-        :param str style: 'square' or 'round'
+        :param str style: 'square' or 'round' or 'rounded-square'
         :rtype: str
         :return: '<path d="M ...."/>'
         '''
@@ -883,6 +931,56 @@ class Dot(GryphElement):
             forward_path += [Point(
                                     coordinate=(center_x + lw/2, center_y - lw/2),
                                     style='line'
+                            )]
+
+        elif style == 'rounded-square':
+            lw = line_width
+            cl = chamfer_length
+
+            forward_path += [Point(
+                                 coordinate=(center_x - lw/2, center_y - lw/2 + cl),
+                                 style='start'
+                            )]
+
+            forward_path += [Point(
+                                    coordinate=(center_x - lw/2, center_y + lw/2 -cl),
+                                    style='line'
+                            )]
+            forward_path += [Point(
+                                    coordinate=(center_x - lw/2 + cl, center_y + lw/2),
+                                    style='arc',
+                                    ctrl_pt=(center_x - lw/2, center_y + lw/2)
+                            )]
+
+            forward_path += [Point(
+                                    coordinate=(center_x + lw/2 - cl, center_y + lw/2),
+                                    style='line'
+                            )]
+            forward_path += [Point(
+                                    coordinate=(center_x + lw/2, center_y + lw/2 - cl),
+                                    style='arc',
+                                    ctrl_pt=(center_x + lw/2, center_y + lw/2)
+                            )]
+
+            forward_path += [Point(
+                                    coordinate=(center_x + lw/2, center_y - lw/2  + cl),
+                                    style='line'
+                            )]
+            forward_path += [Point(
+                                    coordinate=(center_x + lw/2 -cl, center_y - lw/2),
+                                    style='arc',
+                                    ctrl_pt=(center_x + lw/2, center_y - lw/2),
+                            )]
+
+            forward_path += [Point(
+                                 coordinate=(center_x - lw/2 + cl, center_y - lw/2),
+                                 style='line'
+                            )]
+
+            forward_path += [Point(
+                                 coordinate=(center_x - lw/2, center_y - lw/2 + cl),
+                                 style='arc',
+                                 ctrl_pt=(center_x - lw/2, center_y - lw/2)
                             )]
 
         elif style == 'round':
@@ -922,6 +1020,7 @@ class Point:
         その点までを直線で結ぶか円弧で結ぶかのstyleを指定．
         円弧の場合はベジェで結ぶので，制御点の座標をctrl_ptに入れる．
         '''
+        self.coordinate = coordinate
         self.x = coordinate[0]
         self.y = coordinate[1]
         self.style = style

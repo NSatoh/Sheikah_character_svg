@@ -24,12 +24,17 @@ class Html:
     def appendbreak(self):
         self.body += '\n  <br>'
 
+    def appendtext(self, text):
+        self.appendbreak()
+        self.body += '\n  {}'.format(text)
+        self.appendbreak()
+
     def output_html(self):
         return self.header + self.body + self.footer
 
 def generate_characters(wide_size, narrow_size,
                         alphabet_line_width=None, digit_line_width=None,
-                        test=False):
+                        chamfer_length=20, test=False):
 
     if alphabet_line_width:
         line_width_a = alphabet_line_width
@@ -40,6 +45,7 @@ def generate_characters(wide_size, narrow_size,
         line_width_d = digit_line_width
     else:
         line_width_d = narrow_size # alphabet
+
     if test:
         save_dir = "test_output/w{}_n{}".format(wide_size, narrow_size)
     else:
@@ -51,6 +57,7 @@ def generate_characters(wide_size, narrow_size,
     html = Html('Sheikah characters (wide:{}, narrow:{})'.format(wide_size, narrow_size))
     file_names = []
     round_file_names = []
+    rounded_bevel_file_names = []
     grid_file_names = []
 
     alphabet_characters = alphabet_char_data.characters
@@ -72,6 +79,17 @@ def generate_characters(wide_size, narrow_size,
         f.write(svg_output)
         f.close()
         round_file_names += [fname]
+        print('write --> {}'.format(fname))
+
+        svg_output = c.generate_svg(wide_size, narrow_size, line_width_a,
+                             color='cyan', line_join='rounded-bevel',
+                             chamfer_length=chamfer_length)
+        fname = '{}_rounded-bevel.svg'.format(c.char_name)
+        f = open(save_dir + '/' + fname, 'w')
+        f.write(svg_output)
+        f.close()
+        rounded_bevel_file_names += [fname]
+        print('write --> {}'.format(fname))
 
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_a,
                              color='cyan', grid_display=True)
@@ -94,6 +112,15 @@ def generate_characters(wide_size, narrow_size,
         print('write --> {}'.format(fname))
 
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_d,
+                                    color='cyan', line_join='round')
+        fname = '{}_round.svg'.format(c.char_name)
+        f = open(save_dir + '/' + fname, 'w')
+        f.write(svg_output)
+        f.close()
+        file_names += [fname]
+        print('write --> {}'.format(fname))
+
+        svg_output = c.generate_svg(wide_size, narrow_size, line_width_d,
                              color='cyan', grid_display=True)
         fname = '{}_grid.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
@@ -105,12 +132,22 @@ def generate_characters(wide_size, narrow_size,
             print(c.test_print)
 
 
+    html.appendtext('Bevel shape:')
     for fname in file_names:
         html.appendsvg(fname)
+
     html.appendbreak()
+    html.appendtext('Round shape:')
     for fname in round_file_names:
         html.appendsvg(fname)
+
     html.appendbreak()
+    html.appendtext('Rounded-bevel shape:')
+    for fname in rounded_bevel_file_names:
+        html.appendsvg(fname)
+
+    html.appendbreak()
+    html.appendtext('Grid for designing:')
     for fname in grid_file_names:
         html.appendsvg(fname, 300)
 
@@ -123,4 +160,8 @@ def generate_characters(wide_size, narrow_size,
 if __name__ == '__main__':
     wide_size = 180
     narrow_size = 45
+    generate_characters(wide_size, narrow_size, test=True)
+
+    wide_size = 150
+    narrow_size = 100
     generate_characters(wide_size, narrow_size, test=True)
