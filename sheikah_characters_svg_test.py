@@ -1,4 +1,5 @@
 import test_char_data as alphabet_char_data
+import test_digit_char_data as digit_char_data
 import os
 
 class Html:
@@ -34,6 +35,7 @@ class Html:
 
 def generate_characters(wide_size, narrow_size,
                         alphabet_line_width=None, digit_line_width=None,
+                        digit_wide_size=None, digit_narrow_size=None,
                         chamfer_length=20, test=False):
 
     if alphabet_line_width:
@@ -44,7 +46,17 @@ def generate_characters(wide_size, narrow_size,
     if digit_line_width:
         line_width_d = digit_line_width
     else:
-        line_width_d = narrow_size # alphabet
+        line_width_d = narrow_size # digit
+
+    if digit_wide_size:
+        wide_size_d = digit_wide_size
+    else:
+        wide_size_d = wide_size
+
+    if digit_narrow_size:
+        narrow_size_d = digit_narrow_size
+    else:
+        narrow_size_d = narrow_size
 
     if test:
         save_dir = "test_output/w{}_n{}".format(wide_size, narrow_size)
@@ -61,7 +73,7 @@ def generate_characters(wide_size, narrow_size,
     grid_file_names = []
 
     alphabet_characters = alphabet_char_data.characters
-    digit_characters = []
+    digit_characters = digit_char_data.characters
 
     for c in alphabet_characters:
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_a)
@@ -103,7 +115,7 @@ def generate_characters(wide_size, narrow_size,
             print(c.test_print)
 
     for c in digit_characters:
-        svg_output = c.generate_svg(wide_size, narrow_size, line_width_d)
+        svg_output = c.generate_svg(wide_size_d, narrow_size_d, line_width_d)
         fname = '{}.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
         f.write(svg_output)
@@ -111,16 +123,25 @@ def generate_characters(wide_size, narrow_size,
         file_names += [fname]
         print('write --> {}'.format(fname))
 
-        svg_output = c.generate_svg(wide_size, narrow_size, line_width_d,
+        svg_output = c.generate_svg(wide_size_d, narrow_size_d, line_width_d,
                                     color='cyan', line_join='round')
         fname = '{}_round.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
         f.write(svg_output)
         f.close()
-        file_names += [fname]
+        round_file_names += [fname]
         print('write --> {}'.format(fname))
 
-        svg_output = c.generate_svg(wide_size, narrow_size, line_width_d,
+        svg_output = c.generate_svg(wide_size_d, narrow_size_d, line_width_d,
+                                    color='cyan', line_join='rounded-bevel')
+        fname = '{}_rounded-bevel.svg'.format(c.char_name)
+        f = open(save_dir + '/' + fname, 'w')
+        f.write(svg_output)
+        f.close()
+        rounded_bevel_file_names += [fname]
+        print('write --> {}'.format(fname))
+
+        svg_output = c.generate_svg(wide_size_d, narrow_size_d, line_width_d,
                              color='cyan', grid_display=True)
         fname = '{}_grid.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
