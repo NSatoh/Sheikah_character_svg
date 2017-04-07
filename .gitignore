@@ -3,3 +3,4 @@ output/
 alphabet_char_data.py
 digit_char_data.py
 sheikah_characters_svg_generator
+__pycache__/
