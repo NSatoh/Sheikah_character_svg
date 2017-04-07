@@ -1,1 +1,4 @@
 test_output/
+output/
+alphabet_char_data.py
+digit_char_data.py
