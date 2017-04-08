@@ -63,8 +63,11 @@ def generate_characters(wide_size, narrow_size,
     else:
         save_dir = "output/w{}_n{}".format(wide_size, narrow_size)
 
-    if not os.path.isdir(save_dir):
-        os.makedirs(save_dir)
+    os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(os.path.join(save_dir, 'bevel'), exist_ok=True)
+    os.makedirs(os.path.join(save_dir, 'round'), exist_ok=True)
+    os.makedirs(os.path.join(save_dir, 'rounded-bevel'), exist_ok=True)
+    os.makedirs(os.path.join(save_dir, 'grid'), exist_ok=True)
 
     html = Html('Sheikah characters (wide:{}, narrow:{})'.format(wide_size, narrow_size))
     file_names = []
@@ -77,7 +80,7 @@ def generate_characters(wide_size, narrow_size,
 
     for c in alphabet_characters:
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_a)
-        fname = '{}.svg'.format(c.char_name)
+        fname = 'bevel/{}.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
         f.write(svg_output)
         f.close()
@@ -86,7 +89,7 @@ def generate_characters(wide_size, narrow_size,
 
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_a,
                              color='cyan', line_join='round')
-        fname = '{}_round.svg'.format(c.char_name)
+        fname = 'round/{}.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
         f.write(svg_output)
         f.close()
@@ -96,7 +99,7 @@ def generate_characters(wide_size, narrow_size,
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_a,
                              color='cyan', line_join='rounded-bevel',
                              chamfer_length=chamfer_length)
-        fname = '{}_rounded-bevel.svg'.format(c.char_name)
+        fname = 'rounded-bevel/{}.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
         f.write(svg_output)
         f.close()
@@ -105,7 +108,7 @@ def generate_characters(wide_size, narrow_size,
 
         svg_output = c.generate_svg(wide_size, narrow_size, line_width_a,
                              color='cyan', grid_display=True)
-        fname = '{}_grid.svg'.format(c.char_name)
+        fname = 'grid/{}.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
         f.write(svg_output)
         f.close()
@@ -116,7 +119,7 @@ def generate_characters(wide_size, narrow_size,
 
     for c in digit_characters:
         svg_output = c.generate_svg(wide_size_d, narrow_size_d, line_width_d)
-        fname = '{}.svg'.format(c.char_name)
+        fname = 'bevel/{}.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
         f.write(svg_output)
         f.close()
@@ -125,7 +128,7 @@ def generate_characters(wide_size, narrow_size,
 
         svg_output = c.generate_svg(wide_size_d, narrow_size_d, line_width_d,
                                     color='cyan', line_join='round')
-        fname = '{}_round.svg'.format(c.char_name)
+        fname = 'round/{}.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
         f.write(svg_output)
         f.close()
@@ -134,7 +137,7 @@ def generate_characters(wide_size, narrow_size,
 
         svg_output = c.generate_svg(wide_size_d, narrow_size_d, line_width_d,
                                     color='cyan', line_join='rounded-bevel')
-        fname = '{}_rounded-bevel.svg'.format(c.char_name)
+        fname = 'rounded-bevel/{}.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
         f.write(svg_output)
         f.close()
@@ -143,7 +146,7 @@ def generate_characters(wide_size, narrow_size,
 
         svg_output = c.generate_svg(wide_size_d, narrow_size_d, line_width_d,
                              color='cyan', grid_display=True)
-        fname = '{}_grid.svg'.format(c.char_name)
+        fname = 'grid/{}.svg'.format(c.char_name)
         f = open(save_dir + '/' + fname, 'w')
         f.write(svg_output)
         f.close()
