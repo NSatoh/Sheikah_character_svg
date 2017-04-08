@@ -286,18 +286,18 @@ class Char:
             grid_margin = 200
         viewbox_size = size + grid_margin * 2
 
-        x_min = -grid_margin - margin_width
-        y_min = -grid_margin - margin_width - 4 * wide_size - 3 * narrow_size
+        # viewBox を 0,0 で指定するために平行移動量の計算
+        x_translation = grid_margin + margin_width
+        y_translation = grid_margin + margin_width + 4 * wide_size + 3 * narrow_size
 
         svg_header = SVG_HEADER.format(size=viewbox_size * scale,
-                                       x_min=x_min * scale,
-                                       y_min=y_min * scale)
+                                       x_min=0, y_min=0)
         svg_body = ''
         svg_footer = '\n</svg>'
 
         for polyline in self.polylines:
             path = polyline.generate_path(
-                      wide_size, narrow_size, line_width,
+                      wide_size, narrow_size, line_width, x_translation, y_translation,
                       color, scale,
                       line_join, stop_style, inner_corner_radius)
 
@@ -315,7 +315,7 @@ class Char:
 
         for dot in self.dots:
             path = dot.generate_path(
-                      wide_size, narrow_size, line_width,
+                      wide_size, narrow_size, line_width, x_translation, y_translation,
                       color, scale, style)
             svg_body += '\n' + path.output_svg()
 
@@ -393,6 +393,9 @@ class GryphElement:
         (i, j) = cell_address
         x = (wide_size * (i+1) + narrow_size * i) / 2
         y = (wide_size * (j+1) + narrow_size * j) / 2
+        # 例えばこんなふうにすると，傾いた書体が作れる．
+        # 右上がはみ出るので，サイズの計算方式とか変えないとダメだが．
+        # x = (wide_size * (i+1) + narrow_size * i) / 2 + y/3
         return (x, y)
 
 
@@ -439,6 +442,7 @@ class Polyline(GryphElement):
         self.end_style = end_style
 
     def generate_path(self, wide_size, narrow_size, line_width,
+                      x_translation, y_translation,
                       color='black', scale=1, line_join='bevel',
                       stop_style=None, inner_corner_radius=None,
                       chamfer_length=15):
@@ -880,7 +884,7 @@ class Polyline(GryphElement):
             new_path_points.insert(0, s)
             path_points = new_path_points
 
-        path = SvgPath(color, scale)
+        path = SvgPath(color, x_translation, y_translation, scale)
         for point in path_points:
             path.append(point)
 
@@ -899,7 +903,7 @@ class Dot(GryphElement):
         '''
         self.cell_address = (i, j)
 
-    def generate_path(self, wide_size, narrow_size, line_width,
+    def generate_path(self, wide_size, narrow_size, line_width, x_translation, y_translation,
                       color='black', scale=1, style='square', chamfer_length=15):
         '''
         :param int wide_size:
@@ -1001,7 +1005,7 @@ class Dot(GryphElement):
 
             forward_path = [pt_a, pt_ab, pt_b, pt_bc, pt_c, pt_cd, pt_d, pt_de, pt_e]
 
-        path = SvgPath(color, scale)
+        path = SvgPath(color, x_translation, y_translation, scale)
         for point in forward_path:
             path.append(point)
 
@@ -1029,7 +1033,7 @@ class Point:
 
 class SvgPath:
 
-    def __init__(self, color, scale=1):
+    def __init__(self, color, x_translation, y_translation, scale=1):
         '''
         :param str color: 'black' or 'red' or 'blue' or 'cyan' or etc...
         :param int scale:
@@ -1040,6 +1044,8 @@ class SvgPath:
         self.path_header = '  <path stroke="none" fill="{color}" d="'.format(color=color)
         self.path_body = ''
         self.path_footer = '\n    Z\n  "/>'
+        self.x_translation = x_translation
+        self.y_translation = y_translation
         self.scale = scale
 
     def append(self, point):
@@ -1049,7 +1055,8 @@ class SvgPath:
         Pointクラスのオブジェクトを受け取って，その座標とstyleを参照して
         path要素のd属性の末尾にコマンドと座標を追加していく．
 
-        この埋め込みの際に，y座標の符号反転とscale倍が処理される．
+        この埋め込みの際に，y座標の符号反転と平行移動（viewBoxのyを0にできるように調整），
+        両座標のscale倍，がすべて処理される．
         '''
 
         if point.style == 'start':
@@ -1058,10 +1065,11 @@ class SvgPath:
             self.path_body += '\n    L' # HやVも使った方がいいんだろうか．
         elif point.style == 'arc':
             self.path_body += '\n    Q {x} {y}'.format(
-                                   x=point.ctrl_pt[0] * self.scale,
-                                   y=-point.ctrl_pt[1] * self.scale)
+                                   x=(point.ctrl_pt[0] + self.x_translation) * self.scale,
+                                   y=(-point.ctrl_pt[1] + self.y_translation) * self.scale)
 
-        self.path_body += ' {x} {y}'.format(x=point.x * self.scale, y=-point.y * self.scale)
+        self.path_body += ' {x} {y}'.format(x=(point.x + self.x_translation) * self.scale,
+                                            y=(-point.y + self.y_translation) * self.scale)
 
 
     def output_svg(self):
