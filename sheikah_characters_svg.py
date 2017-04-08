@@ -325,30 +325,35 @@ class Char:
             ns = narrow_size
 
             for i in range(8):
-                svg_body += '\n  <line x1="0" y1="{y}" x2="{x}" y2="{y}"'.format(
-                                    x=4*ws+3*ns, y=-((i+1)//2)*ws - (i//2)*ns)
+                svg_body += '\n  <line x1="{x1}" y1="{y}" x2="{x2}" y2="{y}"'.format(
+                                    x1=x_translation, x2=4*ws+3*ns + x_translation,
+                                    y=-((i+1)//2)*ws - (i//2)*ns + y_translation)
                 svg_body += '\n     stroke="red" stroke-width="1" stroke-dasharray="20,5"/>'
 
             for i in range(8):
-                svg_body += '\n  <line x1="{x}" y1="0" x2="{x}" y2="{y}"'.format(
-                                    y=-(4*ws+3*ns), x=((i+1)//2)*ws + (i//2)*ns)
+                svg_body += '\n  <line x1="{x}" y1="{y1}" x2="{x}" y2="{y2}"'.format(
+                                    x=((i+1)//2)*ws + (i//2)*ns + x_translation,
+                                    y1=y_translation, y2=-(4*ws+3*ns)+y_translation, )
                 svg_body += '\n     stroke="red" stroke-width="1" stroke-dasharray="20,5"/>'
 
-            svg_body += '\n  <line x1="0" y1="0" x2="0" y2="{y}"'.format(y=grid_margin)
+            svg_body += '\n  <line x1="{x}" y1="{y1}" x2="{x}" y2="{y2}"'.format(
+                                    x=x_translation, y1=y_translation, y2=grid_margin+y_translation)
             svg_body += '\n     stroke="red" stroke-width="1"/>'
 
-            svg_body += '\n  <line x1="{x}" y1="0" x2="{x}" y2="{y}"'.format(x=ws,y=grid_margin)
+            svg_body += '\n  <line x1="{x}" y1="{y1}" x2="{x}" y2="{y2}"'.format(
+                                    x=ws+x_translation, y1=y_translation, y2=grid_margin+y_translation)
             svg_body += '\n     stroke="red" stroke-width="1"/>'
 
-            svg_body += '\n  <line x1="{x}" y1="0" x2="{x}" y2="{y}"'.format(x=ws+ns,y=grid_margin)
+            svg_body += '\n  <line x1="{x}" y1="{y1}" x2="{x}" y2="{y2}"'.format(
+                                    x=ws+ns+x_translation, y1=y_translation, y2=grid_margin+y_translation)
             svg_body += '\n     stroke="red" stroke-width="1"/>'
 
             svg_body += '\n  <text x="{x}" y="{y}" fill="black" text-anchor="middle" font-size="{fs}">'.format(
-                x=ws/2, y=grid_margin * 7/16, fs=grid_margin//8)
+                x=ws/2+x_translation, y=grid_margin * 7/16+y_translation, fs=grid_margin//8)
             svg_body += '\n     {ws}</text>'.format(ws=ws)
 
             svg_body += '\n  <text x="{x}" y="{y}" fill="black" text-anchor="middle" font-size="{fs}">'.format(
-                x=ws+ns/2, y=grid_margin * 7/16, fs=grid_margin//8)
+                x=ws+ns/2+x_translation, y=grid_margin * 7/16+y_translation, fs=grid_margin//8)
             svg_body += '\n     {ns}</text>'.format(ns=ns)
 
         return svg_header + svg_body + svg_footer
