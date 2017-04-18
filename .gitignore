@@ -2,5 +2,7 @@ test_output/
 output/
 alphabet_char_data.py
 digit_char_data.py
-sheikah_characters_svg_generator.py
 __pycache__/
+font_generator/dest/*.svg
+font_generator/dest/*.ttf
+font_generator/*.log
