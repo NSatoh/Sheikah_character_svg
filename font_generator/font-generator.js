@@ -2,14 +2,14 @@ const svgicons2svgfont = require('svgicons2svgfont');
 const fs = require('fs');
 const path = require('path');
 const fontStream = svgicons2svgfont({
-  fontName: 'sheikah'
+  fontName: 'sheikah',
+  descent: 200
 });
 
 const inputSettings = [
   {
-    svgDirectory: '../glyph/output/w150_n100/bevel',
+    svgDirectory: '../output/w110_n180/round',
     charMetadata: [
-      { name: '-', unicode: ['\u002D'], svgPath: '-.svg' },
       { name: '0', unicode: ['\u0030'], svgPath: '0.svg' },
       { name: '1', unicode: ['\u0031'], svgPath: '1.svg' },
       { name: '2', unicode: ['\u0032'], svgPath: '2.svg' },
@@ -23,7 +23,7 @@ const inputSettings = [
     ]
   },
   {
-    svgDirectory: '../glyph/output/w150_n100/round',
+    svgDirectory: '../output/w150_n100/rounded-bevel',
     charMetadata: [
       { name: 'A', unicode: ['\u0041'], svgPath: 'a.svg' },
       { name: 'B', unicode: ['\u0042'], svgPath: 'b.svg' },
@@ -54,8 +54,11 @@ const inputSettings = [
     ]
   },
   {
-    svgDirectory: '../glyph/output/w150_n100/bevel',
+    svgDirectory: '../output/w180_n45/round',
     charMetadata: [
+      { name: ' ', unicode: ['\u0020'], svgPath: 'SPACE.svg' },
+      { name: '.', unicode: ['\u002E'], svgPath: 'FULL_STOP.svg' },
+      { name: '-', unicode: ['\u002D'], svgPath: '-.svg' },
       { name: 'a', unicode: ['\u0061'], svgPath: 'a.svg' },
       { name: 'b', unicode: ['\u0062'], svgPath: 'b.svg' },
       { name: 'c', unicode: ['\u0063'], svgPath: 'c.svg' },
