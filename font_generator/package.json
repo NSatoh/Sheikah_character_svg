@@ -2,7 +2,7 @@
   "name": "font_generator",
   "version": "1.0.0",
   "scripts": {
-    "start": "node font-generator.js && svg2ttf ./dest/sheikah.svg ./dest/sheikah.ttf"
+    "start": "node font-generator.js"
   },
   "dependencies": {
     "svg2ttf": "^4.0.2",
