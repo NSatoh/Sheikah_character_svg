@@ -1,8 +1,13 @@
-const svgicons2svgfont = require('svgicons2svgfont');
 const fs = require('fs');
 const path = require('path');
+
+const svgicons2svgfont = require('svgicons2svgfont');
+const svg2ttf = require('svg2ttf');
+
+const fontName = 'sheikah';
+const fontVersion = '1.0';
 const fontStream = svgicons2svgfont({
-  fontName: 'sheikah',
+  fontName: fontName,
   descent: 200
 });
 
@@ -88,12 +93,17 @@ const inputSettings = [
   }
 ];
 
-const destinationPath = 'dest/sheikah.svg';
+const tmpSvgFontPath = 'dest/tmp.svg';
+const destinationPath = `dest/${fontName}.ttf`;
 
-// Setting the font destination
-fontStream.pipe(fs.createWriteStream(destinationPath))
+// Setting the svg font destination
+fontStream.pipe(fs.createWriteStream(tmpSvgFontPath))
   .on('finish', () => {
-    console.log('Font successfully created!')
+    console.log('SVG Font successfully created!');
+
+    // Create ttf font
+    const ttf = svg2ttf(fs.readFileSync(tmpSvgFontPath).toString(), {version: fontVersion});
+    fs.writeFileSync(destinationPath, new Buffer(ttf.buffer));
   })
   .on('error', (err) => {
     console.log(err);
@@ -116,5 +126,5 @@ const loadInputSetting = (inputSetting) => {
 
 inputSettings.forEach(loadInputSetting);
 
-// Do not forget to end the stream
+// End the stream
 fontStream.end();
